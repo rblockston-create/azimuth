@@ -4,7 +4,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const { customAlphabet } = require('nanoid');
 
-const { users, sessions, boards, shapes } = require('./database');
+const { users, sessions, boards, shapes, tasks } = require('./database');
 const {
   newToken,
   setSessionCookie,
@@ -16,6 +16,7 @@ const {
 const { attachRealtime } = require('./realtime');
 
 const boardId = customAlphabet('abcdefghijkmnpqrstuvwxyz23456789', 10);
+const taskId = customAlphabet('abcdefghijkmnpqrstuvwxyz23456789', 12);
 
 const app = express();
 app.set('trust proxy', 1); // Render terminates TLS upstream
@@ -64,9 +65,12 @@ app.get('/api/boards', requireAuth, (req, res) => {
     boards: boards.list().map((b) => ({
       id: b.id,
       title: b.title,
+      kind: b.kind,
       ownerId: b.owner_id,
       ownerName: b.owner_name,
       shapeCount: b.shape_count,
+      taskCount: b.task_count,
+      doneCount: b.done_count,
       updatedAt: b.updated_at,
     })),
   });
@@ -74,17 +78,65 @@ app.get('/api/boards', requireAuth, (req, res) => {
 
 app.post('/api/boards', requireAuth, (req, res) => {
   const title = (req.body?.title || '').trim() || 'Untitled board';
-  const board = boards.create({ id: boardId(), title, ownerId: req.user.id });
-  res.status(201).json({ board: { id: board.id, title: board.title, ownerId: board.owner_id } });
+  const kind = req.body?.kind === 'tasks' ? 'tasks' : 'canvas';
+  const board = boards.create({ id: boardId(), title, ownerId: req.user.id, kind });
+  res.status(201).json({
+    board: { id: board.id, title: board.title, kind: board.kind, ownerId: board.owner_id },
+  });
 });
 
 app.get('/api/boards/:id', requireAuth, (req, res) => {
   const board = boards.get(req.params.id);
   if (!board) return res.status(404).json({ error: 'That board no longer exists.' });
-  res.json({
-    board: { id: board.id, title: board.title, ownerId: board.owner_id },
-    shapes: shapes.forBoard(board.id),
-  });
+  const payload = {
+    board: { id: board.id, title: board.title, kind: board.kind, ownerId: board.owner_id },
+  };
+  if (board.kind === 'tasks') payload.tasks = tasks.forBoard(board.id);
+  else payload.shapes = shapes.forBoard(board.id);
+  res.json(payload);
+});
+
+// ---------- tasks ----------
+const requireTaskBoard = (req, res, next) => {
+  const board = boards.get(req.params.id);
+  if (!board) return res.status(404).json({ error: 'That board no longer exists.' });
+  if (board.kind !== 'tasks') return res.status(400).json({ error: 'That board is a canvas, not a task board.' });
+  req.board = board;
+  next();
+};
+
+app.get('/api/boards/:id/tasks', requireAuth, requireTaskBoard, (req, res) => {
+  res.json({ tasks: tasks.forBoard(req.board.id) });
+});
+
+app.post('/api/boards/:id/tasks', requireAuth, requireTaskBoard, (req, res) => {
+  const title = (req.body?.title || '').trim();
+  if (!title) return res.status(400).json({ error: 'Give the task a name.' });
+  const task = tasks.add({ ...req.body, title, id: taskId(), boardId: req.board.id });
+  res.status(201).json({ task });
+});
+
+// Bulk import — used to bring a spreadsheet onto a board in one shot.
+app.post('/api/boards/:id/tasks/import', requireAuth, requireTaskBoard, (req, res) => {
+  const rows = Array.isArray(req.body?.tasks) ? req.body.tasks : null;
+  if (!rows?.length) return res.status(400).json({ error: 'Nothing to import.' });
+  const clean = rows
+    .map((r) => ({ ...r, title: String(r.title || '').trim() }))
+    .filter((r) => r.title);
+  if (!clean.length) return res.status(400).json({ error: 'None of those rows had a task name.' });
+  const all = tasks.bulkAdd(req.board.id, clean, taskId);
+  res.status(201).json({ tasks: all, imported: clean.length });
+});
+
+app.patch('/api/tasks/:taskId', requireAuth, (req, res) => {
+  const task = tasks.update(req.params.taskId, req.body || {});
+  if (!task) return res.status(404).json({ error: 'That task no longer exists.' });
+  res.json({ task });
+});
+
+app.delete('/api/tasks/:taskId', requireAuth, (req, res) => {
+  tasks.remove(req.params.taskId);
+  res.json({ ok: true });
 });
 
 app.patch('/api/boards/:id', requireAuth, (req, res) => {
