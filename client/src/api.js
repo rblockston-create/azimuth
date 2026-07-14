@@ -25,10 +25,16 @@ export const api = {
   logout: () => request('POST', '/api/logout'),
 
   listBoards: () => request('GET', '/api/boards'),
-  createBoard: (title) => request('POST', '/api/boards', { title }),
+  createBoard: (title, kind = 'canvas') => request('POST', '/api/boards', { title, kind }),
   getBoard: (id) => request('GET', `/api/boards/${id}`),
   renameBoard: (id, title) => request('PATCH', `/api/boards/${id}`, { title }),
   deleteBoard: (id) => request('DELETE', `/api/boards/${id}`),
+
+  listTasks: (boardId) => request('GET', `/api/boards/${boardId}/tasks`),
+  createTask: (boardId, task) => request('POST', `/api/boards/${boardId}/tasks`, task),
+  importTasks: (boardId, tasks) => request('POST', `/api/boards/${boardId}/tasks/import`, { tasks }),
+  updateTask: (taskId, patch) => request('PATCH', `/api/tasks/${taskId}`, patch),
+  deleteTask: (taskId) => request('DELETE', `/api/tasks/${taskId}`),
 
   listUsers: () => request('GET', '/api/users'),
   createUser: (payload) => request('POST', '/api/users', payload),
