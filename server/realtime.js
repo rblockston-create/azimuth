@@ -1,6 +1,6 @@
 const { WebSocketServer } = require('ws');
 const { userFromCookieHeader } = require('./auth');
-const { boards, shapes } = require('./database');
+const { boards, shapes, tasks } = require('./database');
 
 // boardId -> Set<ws>
 const rooms = new Map();
@@ -65,13 +65,16 @@ function attachRealtime(server) {
     const { boardId, user } = ws;
     join(boardId, ws);
 
-    // Replay board history so the newcomer sees the same canvas as everyone else.
+    // Replay board state so the newcomer sees exactly what everyone else does.
+    const board = boards.get(boardId);
     ws.send(
       JSON.stringify({
         type: 'init',
         boardId,
+        kind: board.kind,
         you: { id: user.id, name: user.display_name, color: user.color, role: user.role },
-        shapes: shapes.forBoard(boardId),
+        shapes: board.kind === 'tasks' ? [] : shapes.forBoard(boardId),
+        tasks: board.kind === 'tasks' ? tasks.forBoard(boardId) : [],
       })
     );
     announcePresence(boardId);
@@ -120,6 +123,22 @@ function attachRealtime(server) {
           broadcast(boardId, { type: 'shape:delete', ids }, ws);
           break;
         }
+
+        // Task boards: the client PATCHes via REST, then tells peers what changed.
+        // The server re-reads from disk rather than trusting the payload it was handed.
+        case 'task:changed': {
+          const t = tasks.get(msg.taskId);
+          if (t) broadcast(boardId, { type: 'task:changed', task: t }, ws);
+          break;
+        }
+
+        case 'task:removed':
+          if (msg.taskId) broadcast(boardId, { type: 'task:removed', taskId: msg.taskId }, ws);
+          break;
+
+        case 'task:imported':
+          broadcast(boardId, { type: 'task:imported', tasks: tasks.forBoard(boardId) }, ws);
+          break;
 
         case 'board:clear':
           if (user.role !== 'superadmin' && boards.get(boardId).owner_id !== user.id) return;
