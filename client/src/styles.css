@@ -369,3 +369,60 @@ input {
   .bearing dl { display: none; }
   .hint { display: none; }
 }
+
+/* ---------- people ---------- */
+.notice {
+  color: var(--brass);
+  font-size: 13px;
+  font-family: var(--font-mono);
+  margin: 20px 0 0;
+}
+
+.add-person {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+.add-person .field { margin-bottom: 0; }
+.add-person select {
+  width: 100%;
+  padding: 11px 12px;
+  background: var(--slate-800);
+  border: 1px solid var(--slate-600);
+  border-radius: 4px;
+  color: #e6ecf1;
+  font: inherit;
+}
+.add-person select:focus { border-color: var(--brass); outline: none; }
+.add-person .add-btn { height: 43px; white-space: nowrap; }
+
+.fineprint {
+  color: var(--mist);
+  font-size: 12px;
+  margin: 12px 0 0;
+}
+
+.person-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 500;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.person-name .handle {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--mist);
+  font-weight: 400;
+}
+.you-tag { color: var(--brass); }
+
+button.wordmark { cursor: pointer; }
+
+@media (max-width: 720px) {
+  .add-person { grid-template-columns: 1fr; }
+  .add-person .add-btn { width: 100%; }
+}
