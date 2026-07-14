@@ -67,6 +67,11 @@ export default function Boards({ user, onSignedOut }) {
           <span className="dot" style={{ background: user.color }} />
           {user.name}
           {user.role === 'superadmin' && ' · superadmin'}
+          {user.role === 'superadmin' && (
+            <button className="btn ghost small" onClick={() => navigate('/people')}>
+              People
+            </button>
+          )}
           <button className="btn ghost small" onClick={signOut}>
             Sign out
           </button>
