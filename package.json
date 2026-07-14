@@ -4,7 +4,7 @@
   "private": true,
   "description": "Azimuth — collaborative whiteboard",
   "engines": {
-    "node": ">=20"
+    "node": "22.x"
   },
   "scripts": {
     "install:all": "npm install --prefix server && npm install --prefix client",
