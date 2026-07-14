@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: azimuth
+    runtime: node
+    plan: starter          # WebSockets + persistent disk need a paid instance
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data
+      - key: SUPERADMIN_PASSWORD
+        sync: false        # set this in the Render dashboard before first boot
+    disk:
+      name: azimuth-data
+      mountPath: /var/data
+      sizeGB: 1
