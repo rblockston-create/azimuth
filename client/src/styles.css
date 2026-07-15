@@ -602,6 +602,7 @@ button.wordmark { cursor: pointer; }
 .chip.owner { border-color: #3d5a6c; color: #8fbcd4; }
 .chip.date.overdue { border-color: var(--alert); color: var(--alert); }
 .chip.blocker { border-color: #6b4a2a; color: var(--brass); }
+.chip.note { border-color: var(--slate-600); color: var(--mist); }
 
 .card-blockers {
   margin: 7px 0 0 24px;
