@@ -539,6 +539,13 @@ button.wordmark { cursor: pointer; }
 .card:hover { border-color: var(--slate-600); }
 .card.dragging { opacity: 0.4; }
 .card.done .card-title { text-decoration: line-through; color: var(--mist); }
+.card.overdue {
+  background: #fdf2f0;
+  border-color: var(--alert);
+  box-shadow: inset 3px 0 0 var(--alert);
+}
+.card.overdue:hover { border-color: var(--alert); }
+.card.overdue .card-title { color: #8a2f28; }
 
 .card-top { display: flex; align-items: flex-start; gap: 8px; }
 .card-title {
