@@ -32,6 +32,7 @@ export default function TaskBoard({ user }) {
   const [dragId, setDragId] = useState(null);
   const [dropCol, setDropCol] = useState(null);
   const [editing, setEditing] = useState(null);
+  const [adding, setAdding] = useState(null);
 
   const ws = useRef(null);
 
@@ -129,14 +130,18 @@ export default function TaskBoard({ user }) {
     }
   };
 
-  const addTask = async (status) => {
-    const name = prompt('New task');
-    if (!name?.trim()) return;
+  // Create a task from the composer modal. Mirrors the fields the editor saves,
+  // so anything typed here (owner, dates, notes, blockers) is persisted too.
+  const addTask = async (status, fields) => {
+    const name = fields.title.trim();
+    if (!name) return;
     try {
       const { task } = await api.createTask(id, {
-        title: name.trim(),
+        ...fields,
+        title: name,
         status,
-        category: category === 'All' ? '' : category,
+        category: fields.category || (category === 'All' ? '' : category),
+        targetDate: fields.targetDate || null,
       });
       setTasks((prev) => [...prev, task]);
       tell({ type: 'task:changed', taskId: task.id });
@@ -320,7 +325,7 @@ export default function TaskBoard({ user }) {
                   </article>
                 ))}
 
-                <button className="add-card" onClick={() => addTask(col.id)}>
+                <button className="add-card" onClick={() => setAdding(col.id)}>
                   + Add task
                 </button>
               </div>
@@ -336,6 +341,17 @@ export default function TaskBoard({ user }) {
           onSave={(patch) => {
             patchTask(editing.id, patch);
             setEditing(null);
+          }}
+        />
+      )}
+
+      {adding && (
+        <TaskComposer
+          defaultCategory={category === 'All' ? '' : category}
+          onClose={() => setAdding(null)}
+          onSave={(fields) => {
+            addTask(adding, fields);
+            setAdding(null);
           }}
         />
       )}
@@ -402,6 +418,79 @@ function TaskEditor({ task, onClose, onSave }) {
           <button className="btn ghost small" onClick={onClose}>Cancel</button>
           <button
             className="btn small"
+            onClick={() => onSave({ ...form, targetDate: form.targetDate || null })}
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Add task. Same sheet markup as TaskEditor so it matches the edit modal exactly,
+// but starts empty and creates a new task instead of patching one.
+function TaskComposer({ onClose, onSave, defaultCategory }) {
+  const [form, setForm] = useState({
+    title: '',
+    group: '',
+    category: defaultCategory || '',
+    owner: '',
+    targetDate: '',
+    blockers: '',
+    notes: '',
+  });
+
+  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+  const canSave = form.title.trim().length > 0;
+
+  return (
+    <div className="sheet-backdrop" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        <h3>Add task</h3>
+
+        <div className="field">
+          <label htmlFor="n-title">Task</label>
+          <input id="n-title" value={form.title} onChange={set('title')} autoFocus />
+        </div>
+
+        <div className="sheet-row">
+          <div className="field">
+            <label htmlFor="n-cat">Category</label>
+            <input id="n-cat" value={form.category} onChange={set('category')} />
+          </div>
+          <div className="field">
+            <label htmlFor="n-grp">Group</label>
+            <input id="n-grp" value={form.group} onChange={set('group')} />
+          </div>
+        </div>
+
+        <div className="sheet-row">
+          <div className="field">
+            <label htmlFor="n-owner">Owner</label>
+            <input id="n-owner" value={form.owner} onChange={set('owner')} placeholder="Angela" />
+          </div>
+          <div className="field">
+            <label htmlFor="n-date">Target date</label>
+            <input id="n-date" type="date" value={form.targetDate} onChange={set('targetDate')} />
+          </div>
+        </div>
+
+        <div className="field">
+          <label htmlFor="n-notes">Notes</label>
+          <textarea id="n-notes" rows={4} value={form.notes} onChange={set('notes')} />
+        </div>
+
+        <div className="field">
+          <label htmlFor="n-block">Blocked by</label>
+          <textarea id="n-block" rows={3} value={form.blockers} onChange={set('blockers')} />
+        </div>
+
+        <div className="sheet-actions">
+          <button className="btn ghost small" onClick={onClose}>Cancel</button>
+          <button
+            className="btn small"
+            disabled={!canSave}
             onClick={() => onSave({ ...form, targetDate: form.targetDate || null })}
           >
             Save
