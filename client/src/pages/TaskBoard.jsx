@@ -307,6 +307,11 @@ export default function TaskBoard({ user }) {
                           ⚠ blocked by
                         </span>
                       )}
+                      {t.notes && (
+                        <span className="chip note" title={t.notes}>
+                          ≡ notes
+                        </span>
+                      )}
                     </div>
 
                     {t.blockers && <p className="card-blockers">{t.blockers}</p>}
@@ -379,6 +384,11 @@ function TaskEditor({ task, onClose, onSave }) {
             <label htmlFor="t-date">Target date</label>
             <input id="t-date" type="date" value={form.targetDate} onChange={set('targetDate')} />
           </div>
+        </div>
+
+        <div className="field">
+          <label htmlFor="t-notes">Notes</label>
+          <textarea id="t-notes" rows={4} value={form.notes} onChange={set('notes')} />
         </div>
 
         <div className="field">
