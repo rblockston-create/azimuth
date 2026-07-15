@@ -270,7 +270,9 @@ export default function TaskBoard({ user }) {
                 {byColumn[col.id].map((t) => (
                   <article
                     key={t.id}
-                    className={`card${dragId === t.id ? ' dragging' : ''}${t.status === 'done' ? ' done' : ''}`}
+                    className={`card${dragId === t.id ? ' dragging' : ''}${t.status === 'done' ? ' done' : ''}${
+                      t.status !== 'done' && t.targetDate && t.targetDate < today() ? ' overdue' : ''
+                    }`}
                     draggable
                     onDragStart={() => setDragId(t.id)}
                     onDragEnd={() => setDragId(null)}
