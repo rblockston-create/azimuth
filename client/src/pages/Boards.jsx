@@ -33,10 +33,10 @@ export default function Boards({ user, onSignedOut }) {
     load();
   }, []);
 
-  const create = async () => {
+  const create = async (kind) => {
     try {
-      const { board } = await api.createBoard(title);
-      navigate(`/b/${board.id}`);
+      const { board } = await api.createBoard(title, kind);
+      navigate(kind === 'tasks' ? `/t/${board.id}` : `/b/${board.id}`);
     } catch (err) {
       setError(err.message);
     }
@@ -86,10 +86,13 @@ export default function Boards({ user, onSignedOut }) {
           placeholder="What are you working out?"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && create()}
+          onKeyDown={(e) => e.key === 'Enter' && create('canvas')}
         />
-        <button className="btn small" onClick={create}>
-          Create board
+        <button className="btn ghost small" onClick={() => create('canvas')}>
+          Whiteboard
+        </button>
+        <button className="btn small" onClick={() => create('tasks')}>
+          Task board
         </button>
       </div>
 
@@ -102,9 +105,13 @@ export default function Boards({ user, onSignedOut }) {
         <ul className="board-list">
           {boards.map((b) => (
             <li className="board-row" key={b.id}>
-              <Link to={`/b/${b.id}`}>{b.title}</Link>
+              <span className={`kind-tag ${b.kind}`}>{b.kind === 'tasks' ? 'Tasks' : 'Canvas'}</span>
+              <Link to={b.kind === 'tasks' ? `/t/${b.id}` : `/b/${b.id}`}>{b.title}</Link>
               <span className="meta">
-                {b.shapeCount} {b.shapeCount === 1 ? 'mark' : 'marks'} · {b.ownerName} · {ago(b.updatedAt)}
+                {b.kind === 'tasks'
+                  ? `${b.doneCount}/${b.taskCount} done`
+                  : `${b.shapeCount} ${b.shapeCount === 1 ? 'mark' : 'marks'}`}{' '}
+                · {b.ownerName} · {ago(b.updatedAt)}
               </span>
               {(b.ownerId === user.id || user.role === 'superadmin') && (
                 <button className="kill" title="Delete board" onClick={() => remove(b.id)}>
