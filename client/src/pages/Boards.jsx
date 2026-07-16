@@ -72,7 +72,10 @@ export default function Boards({ user, onSignedOut }) {
               People
             </button>
           )}
-          <button className="btn ghost small" onClick={signOut}>
+          <button className="btn ghost small" onClick={() => navigate('/dashboard')}>
+              Dashboard
+            </button>
+            <button className="btn ghost small" onClick={signOut}>
             Sign out
           </button>
         </div>
