@@ -89,6 +89,12 @@ if (!taskCols.includes('cost')) {
   console.log('[migrate] added tasks.cost');
 }
 
+const taskCostItemsCols = db.prepare('PRAGMA table_info(tasks)').all().map((c) => c.name);
+if (!taskCostItemsCols.includes('cost_items')) {
+  db.exec('ALTER TABLE tasks ADD COLUMN cost_items TEXT');
+  console.log('[migrate] added tasks.cost_items');
+}
+
 // ---------- seed ----------
 function seed() {
   const count = db.prepare('SELECT COUNT(*) AS n FROM users').get().n;
@@ -225,6 +231,7 @@ const rowToTask = (r) => ({
   doneDate: r.done_date,
   blockers: r.blockers,
   cost: r.cost,
+  costItems: r.cost_items ? JSON.parse(r.cost_items) : [],
   status: r.status,
   position: r.position,
 });
@@ -293,6 +300,11 @@ const tasks = {
         sets.push('position = ?');
         vals.push(tasks.nextPosition(movedTo, st));
       }
+    }
+
+    if (patch.costItems !== undefined) {
+      sets.push('cost_items = ?');
+      vals.push(JSON.stringify(patch.costItems || []));
     }
 
     if (!sets.length) return rowToTask(current);
