@@ -397,12 +397,17 @@ function TaskEditor({ task, onClose, onSave, boards = [], currentBoardId }) {
     targetDate: task.targetDate || '',
     blockers: task.blockers || '',
     notes: task.notes || '',
-    costItems:
+    costItems: (
       task.costItems && task.costItems.length
         ? task.costItems
         : task.cost != null
-        ? [{ label: '', amount: task.cost }]
-        : [],
+        ? [{ price: task.cost }]
+        : []
+    ).map((it) => ({
+      label: it.label || '',
+      quantity: it.quantity != null ? it.quantity : 1,
+      price: it.price != null ? it.price : it.amount != null ? it.amount : '',
+    })),
     boardId: currentBoardId,
   });
 
@@ -412,9 +417,10 @@ function TaskEditor({ task, onClose, onSave, boards = [], currentBoardId }) {
   const setItems = (next) => setForm({ ...form, costItems: next });
   const updateItem = (i, key, val) =>
     setItems(items.map((it, idx) => (idx === i ? { ...it, [key]: val } : it)));
-  const addItem = () => setItems([...items, { label: '', amount: '' }]);
+  const addItem = () => setItems([...items, { label: '', quantity: 1, price: '' }]);
   const removeItem = (i) => setItems(items.filter((_, idx) => idx !== i));
-  const total = items.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+  const lineTotal = (it) => (Number(it.quantity) || 0) * (Number(it.price) || 0);
+  const total = items.reduce((s, it) => s + lineTotal(it), 0);
 
   return (
     <div className="sheet-backdrop" onClick={onClose}>
@@ -463,23 +469,54 @@ function TaskEditor({ task, onClose, onSave, boards = [], currentBoardId }) {
 
         <div className="field">
           <label>Cost line items</label>
+          {items.length > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                gap: 8,
+                fontSize: 11,
+                letterSpacing: '.04em',
+                textTransform: 'uppercase',
+                color: '#8a8f84',
+                marginBottom: 4,
+              }}
+            >
+              <span style={{ flex: 1 }}>Item needed</span>
+              <span style={{ width: 60 }}>Qty</span>
+              <span style={{ width: 92 }}>Price</span>
+              <span style={{ width: 92, textAlign: 'right' }}>Total</span>
+              <span style={{ width: 22 }} />
+            </div>
+          )}
           {items.map((it, i) => (
-            <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+            <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'center' }}>
               <input
                 style={{ flex: 1 }}
-                placeholder="Description"
+                placeholder="Item needed"
                 value={it.label}
                 onChange={(e) => updateItem(i, 'label', e.target.value)}
               />
               <input
-                style={{ width: 110 }}
+                style={{ width: 60 }}
+                type="number"
+                min="0"
+                step="1"
+                placeholder="1"
+                value={it.quantity}
+                onChange={(e) => updateItem(i, 'quantity', e.target.value)}
+              />
+              <input
+                style={{ width: 92 }}
                 type="number"
                 min="0"
                 step="0.01"
                 placeholder="0.00"
-                value={it.amount}
-                onChange={(e) => updateItem(i, 'amount', e.target.value)}
+                value={it.price}
+                onChange={(e) => updateItem(i, 'price', e.target.value)}
               />
+              <span style={{ width: 92, textAlign: 'right', color: '#6b6b63' }}>
+                ${lineTotal(it).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
               <button
                 type="button"
                 className="kill"
@@ -494,7 +531,7 @@ function TaskEditor({ task, onClose, onSave, boards = [], currentBoardId }) {
             + Add line item
           </button>
           <div style={{ marginTop: 8, textAlign: 'right', fontWeight: 600 }}>
-            Total: ${total.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+            Total: ${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
 
@@ -514,9 +551,13 @@ function TaskEditor({ task, onClose, onSave, boards = [], currentBoardId }) {
             className="btn small"
             onClick={() => {
               const clean = form.costItems
-                .map((it) => ({ label: (it.label || '').trim(), amount: Number(it.amount) || 0 }))
-                .filter((it) => it.label || it.amount);
-              const sum = clean.reduce((s, it) => s + it.amount, 0);
+                .map((it) => ({
+                  label: (it.label || '').trim(),
+                  quantity: Number(it.quantity) || 0,
+                  price: Number(it.price) || 0,
+                }))
+                .filter((it) => it.label || it.price);
+              const sum = clean.reduce((s, it) => s + it.quantity * it.price, 0);
               onSave({ ...form, targetDate: form.targetDate || null, costItems: clean, cost: clean.length ? sum : null });
             }}
           >
