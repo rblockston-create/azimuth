@@ -327,6 +327,9 @@ export default function TaskBoard({ user }) {
 
                     <div className="card-meta">
                       {t.owner && <span className="chip owner">{t.owner}</span>}
+                      {t.cost != null && t.cost !== '' && (
+                        <span className="chip cost">${Number(t.cost).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                      )}
                       {t.targetDate && (
                         <span
                           className={`chip date${
@@ -394,6 +397,7 @@ function TaskEditor({ task, onClose, onSave, boards = [], currentBoardId }) {
     targetDate: task.targetDate || '',
     blockers: task.blockers || '',
     notes: task.notes || '',
+    cost: task.cost ?? '',
     boardId: currentBoardId,
   });
 
@@ -444,6 +448,21 @@ function TaskEditor({ task, onClose, onSave, boards = [], currentBoardId }) {
           </div>
         </div>
 
+        <div className="sheet-row">
+          <div className="field">
+            <label htmlFor="t-cost">Cost ($)</label>
+            <input
+              id="t-cost"
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.cost}
+              onChange={set('cost')}
+              placeholder="0.00"
+            />
+          </div>
+        </div>
+
         <div className="field">
           <label htmlFor="t-notes">Notes</label>
           <textarea id="t-notes" rows={4} value={form.notes} onChange={set('notes')} />
@@ -458,7 +477,7 @@ function TaskEditor({ task, onClose, onSave, boards = [], currentBoardId }) {
           <button className="btn ghost small" onClick={onClose}>Cancel</button>
           <button
             className="btn small"
-            onClick={() => onSave({ ...form, targetDate: form.targetDate || null })}
+            onClick={() => onSave({ ...form, targetDate: form.targetDate || null, cost: form.cost === '' ? null : Number(form.cost) })}
           >
             Save
           </button>
@@ -479,6 +498,7 @@ function TaskComposer({ onClose, onSave, defaultCategory }) {
     targetDate: '',
     blockers: '',
     notes: '',
+    cost: '',
   });
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
@@ -516,6 +536,21 @@ function TaskComposer({ onClose, onSave, defaultCategory }) {
           </div>
         </div>
 
+        <div className="sheet-row">
+          <div className="field">
+            <label htmlFor="n-cost">Cost ($)</label>
+            <input
+              id="n-cost"
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.cost}
+              onChange={set('cost')}
+              placeholder="0.00"
+            />
+          </div>
+        </div>
+
         <div className="field">
           <label htmlFor="n-notes">Notes</label>
           <textarea id="n-notes" rows={4} value={form.notes} onChange={set('notes')} />
@@ -531,7 +566,7 @@ function TaskComposer({ onClose, onSave, defaultCategory }) {
           <button
             className="btn small"
             disabled={!canSave}
-            onClick={() => onSave({ ...form, targetDate: form.targetDate || null })}
+            onClick={() => onSave({ ...form, targetDate: form.targetDate || null, cost: form.cost === '' ? null : Number(form.cost) })}
           >
             Save
           </button>
