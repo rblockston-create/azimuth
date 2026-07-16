@@ -397,11 +397,24 @@ function TaskEditor({ task, onClose, onSave, boards = [], currentBoardId }) {
     targetDate: task.targetDate || '',
     blockers: task.blockers || '',
     notes: task.notes || '',
-    cost: task.cost ?? '',
+    costItems:
+      task.costItems && task.costItems.length
+        ? task.costItems
+        : task.cost != null
+        ? [{ label: '', amount: task.cost }]
+        : [],
     boardId: currentBoardId,
   });
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+
+  const items = form.costItems;
+  const setItems = (next) => setForm({ ...form, costItems: next });
+  const updateItem = (i, key, val) =>
+    setItems(items.map((it, idx) => (idx === i ? { ...it, [key]: val } : it)));
+  const addItem = () => setItems([...items, { label: '', amount: '' }]);
+  const removeItem = (i) => setItems(items.filter((_, idx) => idx !== i));
+  const total = items.reduce((s, it) => s + (Number(it.amount) || 0), 0);
 
   return (
     <div className="sheet-backdrop" onClick={onClose}>
@@ -448,18 +461,40 @@ function TaskEditor({ task, onClose, onSave, boards = [], currentBoardId }) {
           </div>
         </div>
 
-        <div className="sheet-row">
-          <div className="field">
-            <label htmlFor="t-cost">Cost ($)</label>
-            <input
-              id="t-cost"
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.cost}
-              onChange={set('cost')}
-              placeholder="0.00"
-            />
+        <div className="field">
+          <label>Cost line items</label>
+          {items.map((it, i) => (
+            <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+              <input
+                style={{ flex: 1 }}
+                placeholder="Description"
+                value={it.label}
+                onChange={(e) => updateItem(i, 'label', e.target.value)}
+              />
+              <input
+                style={{ width: 110 }}
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={it.amount}
+                onChange={(e) => updateItem(i, 'amount', e.target.value)}
+              />
+              <button
+                type="button"
+                className="kill"
+                title="Remove line item"
+                onClick={() => removeItem(i)}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+          <button type="button" className="btn ghost small" onClick={addItem}>
+            + Add line item
+          </button>
+          <div style={{ marginTop: 8, textAlign: 'right', fontWeight: 600 }}>
+            Total: ${total.toLocaleString(undefined, { maximumFractionDigits: 2 })}
           </div>
         </div>
 
@@ -477,7 +512,13 @@ function TaskEditor({ task, onClose, onSave, boards = [], currentBoardId }) {
           <button className="btn ghost small" onClick={onClose}>Cancel</button>
           <button
             className="btn small"
-            onClick={() => onSave({ ...form, targetDate: form.targetDate || null, cost: form.cost === '' ? null : Number(form.cost) })}
+            onClick={() => {
+              const clean = form.costItems
+                .map((it) => ({ label: (it.label || '').trim(), amount: Number(it.amount) || 0 }))
+                .filter((it) => it.label || it.amount);
+              const sum = clean.reduce((s, it) => s + it.amount, 0);
+              onSave({ ...form, targetDate: form.targetDate || null, costItems: clean, cost: clean.length ? sum : null });
+            }}
           >
             Save
           </button>
