@@ -33,6 +33,7 @@ export default function TaskBoard({ user }) {
   const [dropCol, setDropCol] = useState(null);
   const [editing, setEditing] = useState(null);
   const [adding, setAdding] = useState(null);
+  const [taskBoards, setTaskBoards] = useState([]);
 
   const ws = useRef(null);
 
@@ -51,6 +52,14 @@ export default function TaskBoard({ user }) {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [id, navigate]);
+
+  // list of task boards, for the "move to board" selector in the editor
+  useEffect(() => {
+    api
+      .listBoards()
+      .then(({ boards }) => setTaskBoards((boards || []).filter((b) => b.kind === 'tasks')))
+      .catch(() => {});
+  }, []);
 
   // ---------- realtime ----------
   useEffect(() => {
@@ -123,6 +132,20 @@ export default function TaskBoard({ user }) {
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
     try {
       await api.deleteTask(taskId);
+      tell({ type: 'task:removed', taskId });
+    } catch (err) {
+      setTasks(before);
+      setError(err.message);
+    }
+  };
+
+  // Move a task to a different board. It leaves this board's list; the
+  // destination board picks it up on its next load.
+  const moveTask = async (taskId, patch) => {
+    const before = tasks;
+    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    try {
+      await api.updateTask(taskId, patch);
       tell({ type: 'task:removed', taskId });
     } catch (err) {
       setTasks(before);
@@ -337,9 +360,12 @@ export default function TaskBoard({ user }) {
       {editing && (
         <TaskEditor
           task={editing}
+          boards={taskBoards}
+          currentBoardId={id}
           onClose={() => setEditing(null)}
           onSave={(patch) => {
-            patchTask(editing.id, patch);
+            if (patch.boardId && patch.boardId !== id) moveTask(editing.id, patch);
+            else patchTask(editing.id, patch);
             setEditing(null);
           }}
         />
@@ -359,7 +385,7 @@ export default function TaskBoard({ user }) {
   );
 }
 
-function TaskEditor({ task, onClose, onSave }) {
+function TaskEditor({ task, onClose, onSave, boards = [], currentBoardId }) {
   const [form, setForm] = useState({
     title: task.title,
     group: task.group || '',
@@ -368,6 +394,7 @@ function TaskEditor({ task, onClose, onSave }) {
     targetDate: task.targetDate || '',
     blockers: task.blockers || '',
     notes: task.notes || '',
+    boardId: currentBoardId,
   });
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
@@ -381,6 +408,19 @@ function TaskEditor({ task, onClose, onSave }) {
           <label htmlFor="t-title">Task</label>
           <input id="t-title" value={form.title} onChange={set('title')} autoFocus />
         </div>
+
+        {boards.length > 1 && (
+          <div className="field">
+            <label htmlFor="t-board">Board</label>
+            <select id="t-board" value={form.boardId} onChange={set('boardId')}>
+              {boards.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="sheet-row">
           <div className="field">
