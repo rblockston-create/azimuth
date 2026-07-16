@@ -71,6 +71,7 @@ app.get('/api/boards', requireAuth, (req, res) => {
       shapeCount: b.shape_count,
       taskCount: b.task_count,
       doneCount: b.done_count,
+        costTotal: b.cost_total,
       updatedAt: b.updated_at,
     })),
   });
