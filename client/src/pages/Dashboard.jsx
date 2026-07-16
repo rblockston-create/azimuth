@@ -154,16 +154,14 @@ export default function Dashboard({ user }) {
                   }}
                 >
                   <span style={{ fontWeight: 600 }}>{b.title}</span>
-                  <span style={{ color: '#6b6b63', fontSize: 14 }}>
+                  <span style={{ textAlign: 'right', fontSize: 14, color: '#6b6b63' }}>
+                    <span style={{ fontWeight: 600, color: '#a9821c', marginRight: 10 }}>
+                      {money(b.costTotal)}
+                    </span>
                     {b.doneCount}/{b.taskCount} · {pct(b.doneCount, b.taskCount)}%
                   </span>
                 </div>
                 <Bar done={b.doneCount} total={b.taskCount} />
-                {b.costTotal > 0 && (
-                  <div style={{ marginTop: 6, fontSize: 13, color: '#6b6b63' }}>
-                    {money(b.costTotal)} committed
-                  </div>
-                )}
               </button>
             ))}
           </div>
