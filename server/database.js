@@ -165,7 +165,8 @@ const boards = {
         `SELECT b.*, u.display_name AS owner_name,
                 (SELECT COUNT(*) FROM shapes s WHERE s.board_id = b.id AND s.deleted = 0) AS shape_count,
                 (SELECT COUNT(*) FROM tasks t WHERE t.board_id = b.id) AS task_count,
-                (SELECT COUNT(*) FROM tasks t WHERE t.board_id = b.id AND t.status = 'done') AS done_count
+                (SELECT COUNT(*) FROM tasks t WHERE t.board_id = b.id AND t.status = 'done') AS done_count,
+      (SELECT COALESCE(SUM(cost), 0) FROM tasks t WHERE t.board_id = b.id) AS cost_total
          FROM boards b
          JOIN users u ON u.id = b.owner_id
          ORDER BY b.updated_at DESC`
