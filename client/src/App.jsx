@@ -6,6 +6,7 @@ import Boards from './pages/Boards.jsx';
 import Board from './pages/Board.jsx';
 import Users from './pages/Users.jsx';
 import TaskBoard from './pages/TaskBoard.jsx';
+import Dashboard from './pages/Dashboard.jsx';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -27,6 +28,7 @@ export default function App() {
       <Route path="/" element={<Boards user={user} onSignedOut={() => setUser(null)} />} />
       <Route path="/b/:id" element={<Board user={user} />} />
       <Route path="/t/:id" element={<TaskBoard user={user} />} />
+        <Route path="/dashboard" element={<Dashboard user={user} />} />
       {user.role === 'superadmin' && <Route path="/people" element={<Users user={user} />} />}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
