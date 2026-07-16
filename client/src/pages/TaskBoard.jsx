@@ -272,6 +272,10 @@ export default function TaskBoard({ user }) {
               </header>
 
               <div className="col-body">
+                <button className="add-card" onClick={() => setAdding(col.id)}>
+                  + Add task
+                </button>
+
                 {byColumn[col.id].map((t) => (
                   <article
                     key={t.id}
@@ -324,10 +328,6 @@ export default function TaskBoard({ user }) {
                     {t.blockers && <p className="card-blockers">{t.blockers}</p>}
                   </article>
                 ))}
-
-                <button className="add-card" onClick={() => setAdding(col.id)}>
-                  + Add task
-                </button>
               </div>
             </section>
           ))}
