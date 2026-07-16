@@ -83,6 +83,12 @@ if (!boardCols.includes('kind')) {
   console.log('[migrate] added boards.kind');
 }
 
+const taskCols = db.prepare('PRAGMA table_info(tasks)').all().map((c) => c.name);
+if (!taskCols.includes('cost')) {
+  db.exec('ALTER TABLE tasks ADD COLUMN cost REAL');
+  console.log('[migrate] added tasks.cost');
+}
+
 // ---------- seed ----------
 function seed() {
   const count = db.prepare('SELECT COUNT(*) AS n FROM users').get().n;
@@ -218,6 +224,7 @@ const rowToTask = (r) => ({
   targetDate: r.target_date,
   doneDate: r.done_date,
   blockers: r.blockers,
+  cost: r.cost,
   status: r.status,
   position: r.position,
 });
@@ -237,13 +244,13 @@ const tasks = {
   nextPosition: (boardId, status) =>
     (db.prepare('SELECT MAX(position) AS m FROM tasks WHERE board_id = ? AND status = ?').get(boardId, status).m || 0) + 1,
 
-  add: ({ id, boardId, category = '', group = '', title, notes = '', owner = '', targetDate = null, blockers = '', status = 'todo', position }) => {
+  add: ({ id, boardId, category = '', group = '', title, notes = '', owner = '', targetDate = null, blockers = '', cost = null, status = 'todo', position }) => {
     const st = STATUSES.includes(status) ? status : 'todo';
     db.prepare(
-      `INSERT INTO tasks (id, board_id, category, grp, title, notes, owner, target_date, blockers, status, position, done_date)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO tasks (id, board_id, category, grp, title, notes, owner, target_date, blockers, cost, status, position, done_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
-      id, boardId, category, group, title, notes, owner, targetDate || null, blockers, st,
+      id, boardId, category, group, title, notes, owner, targetDate || null, blockers, cost, st,
       position ?? tasks.nextPosition(boardId, st),
       st === 'done' ? new Date().toISOString().slice(0, 10) : null
     );
@@ -258,7 +265,7 @@ const tasks = {
 
     const map = {
       category: 'category', group: 'grp', title: 'title', notes: 'notes',
-      owner: 'owner', targetDate: 'target_date', blockers: 'blockers',
+      owner: 'owner', targetDate: 'target_date', blockers: 'blockers', cost: 'cost',
       status: 'status', position: 'position',
     };
 
