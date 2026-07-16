@@ -276,10 +276,23 @@ const tasks = {
       vals.push(patch.status === 'done' ? new Date().toISOString().slice(0, 10) : null);
     }
 
+    let movedTo = null;
+    if (patch.boardId && patch.boardId !== current.board_id && boards.get(patch.boardId)) {
+      movedTo = patch.boardId;
+      const st = patch.status !== undefined && STATUSES.includes(patch.status) ? patch.status : current.status;
+      sets.push('board_id = ?');
+      vals.push(movedTo);
+      if (patch.position === undefined) {
+        sets.push('position = ?');
+        vals.push(tasks.nextPosition(movedTo, st));
+      }
+    }
+
     if (!sets.length) return rowToTask(current);
     vals.push(id);
     db.prepare(`UPDATE tasks SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
     boards.touch(current.board_id);
+    if (movedTo) boards.touch(movedTo);
     return tasks.get(id);
   },
 
