@@ -4,6 +4,8 @@ import { api } from '../api.js';
 import { Rose } from '../components/icons.jsx';
 
 const pct = (done, total) => (total > 0 ? Math.round((done / total) * 100) : 0);
+const money = (n) =>
+  '$' + (Number(n) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function Bar({ done, total, height = 10 }) {
   const p = pct(done, total);
@@ -46,7 +48,8 @@ export default function Dashboard({ user }) {
   const totals = useMemo(() => {
     const done = boards.reduce((s, b) => s + (b.doneCount || 0), 0);
     const total = boards.reduce((s, b) => s + (b.taskCount || 0), 0);
-    return { done, total, remaining: total - done };
+    const cost = boards.reduce((s, b) => s + (b.costTotal || 0), 0);
+    return { done, total, remaining: total - done, cost };
   }, [boards]);
 
   const ranked = useMemo(
@@ -120,6 +123,9 @@ export default function Dashboard({ user }) {
               <span>
                 {boards.length} {boards.length === 1 ? 'board' : 'boards'}
               </span>
+              <span style={{ marginLeft: 'auto', fontWeight: 600, color: '#3a3a34' }}>
+                {money(totals.cost)} total cost
+              </span>
             </div>
           </section>
 
@@ -153,6 +159,11 @@ export default function Dashboard({ user }) {
                   </span>
                 </div>
                 <Bar done={b.doneCount} total={b.taskCount} />
+                {b.costTotal > 0 && (
+                  <div style={{ marginTop: 6, fontSize: 13, color: '#6b6b63' }}>
+                    {money(b.costTotal)} committed
+                  </div>
+                )}
               </button>
             ))}
           </div>
