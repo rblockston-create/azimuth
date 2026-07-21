@@ -12,6 +12,13 @@ const COLUMNS = [
 
 const today = () => new Date().toISOString().slice(0, 10);
 
+const PRIORITY_STYLES = {
+  high: { background: '#f0d3ce', color: '#a5372a' },
+  medium: { background: '#efe1c1', color: '#8a6a17' },
+  low: { background: '#dce4d9', color: '#4c6b47' },
+};
+const PRIORITY_LABELS = { high: 'High', medium: 'Medium', low: 'Low' };
+
 const fmtDate = (iso) => {
   if (!iso) return null;
   const d = new Date(`${iso}T00:00:00`);
@@ -326,6 +333,11 @@ export default function TaskBoard({ user }) {
                     {t.group && <p className="card-group">{t.group}</p>}
 
                     <div className="card-meta">
+                      {PRIORITY_STYLES[t.priority] && (
+                        <span className="chip" style={PRIORITY_STYLES[t.priority]}>
+                          {PRIORITY_LABELS[t.priority]}
+                        </span>
+                      )}
                       {t.owner && <span className="chip owner">{t.owner}</span>}
                       {t.cost != null && t.cost !== '' && (
                         <span className="chip cost">${Number(t.cost).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
@@ -408,6 +420,7 @@ function TaskEditor({ task, onClose, onSave, boards = [], currentBoardId }) {
       quantity: it.quantity != null ? it.quantity : 1,
       price: it.price != null ? it.price : it.amount != null ? it.amount : '',
     })),
+    priority: task.priority || '',
     boardId: currentBoardId,
   });
 
@@ -454,6 +467,16 @@ function TaskEditor({ task, onClose, onSave, boards = [], currentBoardId }) {
             <label htmlFor="t-grp">Group</label>
             <input id="t-grp" value={form.group} onChange={set('group')} />
           </div>
+        </div>
+
+        <div className="field">
+          <label htmlFor="t-priority">Priority</label>
+          <select id="t-priority" value={form.priority} onChange={set('priority')}>
+            <option value="">None</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
         </div>
 
         <div className="sheet-row">
@@ -574,6 +597,7 @@ function TaskEditor({ task, onClose, onSave, boards = [], currentBoardId }) {
 function TaskComposer({ onClose, onSave, defaultCategory }) {
   const [form, setForm] = useState({
     title: '',
+    priority: '',
     group: '',
     category: defaultCategory || '',
     owner: '',
@@ -605,6 +629,16 @@ function TaskComposer({ onClose, onSave, defaultCategory }) {
             <label htmlFor="n-grp">Group</label>
             <input id="n-grp" value={form.group} onChange={set('group')} />
           </div>
+        </div>
+
+        <div className="field">
+          <label htmlFor="n-priority">Priority</label>
+          <select id="n-priority" value={form.priority} onChange={set('priority')}>
+            <option value="">None</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
         </div>
 
         <div className="sheet-row">
