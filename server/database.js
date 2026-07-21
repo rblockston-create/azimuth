@@ -95,6 +95,12 @@ if (!taskCostItemsCols.includes('cost_items')) {
   console.log('[migrate] added tasks.cost_items');
 }
 
+const taskPriorityCols = db.prepare('PRAGMA table_info(tasks)').all().map((c) => c.name);
+if (!taskPriorityCols.includes('priority')) {
+  db.exec('ALTER TABLE tasks ADD COLUMN priority TEXT');
+  console.log('[migrate] added tasks.priority');
+}
+
 // ---------- seed ----------
 function seed() {
   const count = db.prepare('SELECT COUNT(*) AS n FROM users').get().n;
@@ -232,6 +238,7 @@ const rowToTask = (r) => ({
   doneDate: r.done_date,
   blockers: r.blockers,
   cost: r.cost,
+  priority: r.priority,
   costItems: r.cost_items ? JSON.parse(r.cost_items) : [],
   status: r.status,
   position: r.position,
@@ -252,13 +259,13 @@ const tasks = {
   nextPosition: (boardId, status) =>
     (db.prepare('SELECT MAX(position) AS m FROM tasks WHERE board_id = ? AND status = ?').get(boardId, status).m || 0) + 1,
 
-  add: ({ id, boardId, category = '', group = '', title, notes = '', owner = '', targetDate = null, blockers = '', cost = null, status = 'todo', position }) => {
+  add: ({ id, boardId, category = '', group = '', title, notes = '', owner = '', targetDate = null, blockers = '', cost = null, priority = null, status = 'todo', position }) => {
     const st = STATUSES.includes(status) ? status : 'todo';
     db.prepare(
-      `INSERT INTO tasks (id, board_id, category, grp, title, notes, owner, target_date, blockers, cost, status, position, done_date)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO tasks (id, board_id, category, grp, title, notes, owner, target_date, blockers, cost, priority, status, position, done_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
-      id, boardId, category, group, title, notes, owner, targetDate || null, blockers, cost, st,
+      id, boardId, category, group, title, notes, owner, targetDate || null, blockers, cost, priority, st,
       position ?? tasks.nextPosition(boardId, st),
       st === 'done' ? new Date().toISOString().slice(0, 10) : null
     );
@@ -273,7 +280,7 @@ const tasks = {
 
     const map = {
       category: 'category', group: 'grp', title: 'title', notes: 'notes',
-      owner: 'owner', targetDate: 'target_date', blockers: 'blockers', cost: 'cost',
+      owner: 'owner', targetDate: 'target_date', blockers: 'blockers', cost: 'cost', priority: 'priority',
       status: 'status', position: 'position',
     };
 
